@@ -2,27 +2,88 @@ import Fastify from 'fastify';
 import {pool} from "./db";
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
+import fastifyJwt from "@fastify/jwt";
 const app = Fastify({ logger: true });
 const port = Number(process.env.PORT) || 3000;
+
+declare module 'fastify' {
+    interface FastifyInstance {
+        authenticate: (req: any, res: any) => Promise<void>
+    }
+}
+
+declare module '@fastify/jwt' {
+    interface FastifyJWT{
+        user: {
+            sub: string;
+            roles: string;
+        }
+    }
+}
+
+app.decorate('authenticate', async (req, res) => {
+    try{
+        await req.jwtVerify();
+    }catch(err){
+        return res.status(401).send({
+            statusCode: 401,
+            error: 'Unauthorized',
+            message: 'token ausente ou invalido',
+        })
+    }
+})
+
+
+
+app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET || 'publickey',
+})
 
 app.post('/sessions', async (req, res) => {
     try{
         const { email, password } = req.body as { email: string, password: string };
-        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (user.rows.length === 0){
+        const result = await pool.query('SELECT id, full_name, email, password_hash, status, role FROM users WHERE email = $1', [email]);
+        if (result.rows.length === 0){
             return res.status(401).send({
                 statusCode: 401,
                 error: 'User not found',
                 message: 'Nenhum usuário encontrado'
             })
         }
-        if (user.rows[0].status !== 'Active'){
+        const user = result.rows[0];
+        if (user.status !== 'ACTIVE'){
             return res.status(403).send({
-
+                statusCode: 403,
+                error: 'Account is not active',
+                message: 'A conta não está ativa'
             })
         }
+        const isPasswordValid: boolean = await bcrypt.compare(password, user.password_hash);
+        if (!isPasswordValid){
+            return res.status(401).send({
+                statusCode: 401,
+                error: 'Wrong credentials',
+                message: 'Usuário ou senha incorreta'
+            })
+        }
+        const token = app.jwt.sign(
+            {role: user.role},
+            {
+                sub: user.id,
+                expiresIn: '1d'
+            }
+        )
+        return res.status(201).send({
+            statusCode: 201,
+            message: 'Login realizado com sucesso',
+            token,
+            user: user
+        })
     }catch(err){
-
+        return res.status(500).send({
+            statusCode: 500,
+            message: err
+        })
     }
 })
 
@@ -70,7 +131,7 @@ app.post('/users', async (req, res) => {
     }
 })
 
-app.get('/accounts/:account_number/balance', async (req, res) => {
+app.get('/accounts/:account_number/balance', { onRequest: [app.authenticate] }, async (req, res) => {
     try{
         const { account_number } = req.params as { account_number: string };
 
