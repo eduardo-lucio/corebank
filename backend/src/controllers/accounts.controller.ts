@@ -3,8 +3,6 @@ import {FastifyReply, FastifyRequest} from "fastify";
 import '@fastify/jwt';
 export async function getAccountBalance(req: FastifyRequest, res: FastifyReply){
     try{
-        const { account_number } = req.params as { account_number: string };
-
         const bal = await pool.query('SELECT balance FROM accounts WHERE user_id = $1', [req.user.sub]);
         if (bal.rows.length === 0){
             return res.status(404).send({
