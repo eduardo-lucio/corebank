@@ -1,13 +1,20 @@
-import Fastify from 'fastify';
+import { app } from './app';
 import 'dotenv/config';
-import fastifyJwt from "@fastify/jwt";
-const app = Fastify({ logger: true });
-const port = Number(process.env.PORT) || 3000;
 
-app.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET || 'publickey',
-})
+const port = Number(process.env.PORT) || 3030;
 
-app.listen({ port, host: '0.0.0.0' }).then(() => {
-    console.log(`Servidor rodando em http://localhost:${port}`);
-});
+async function start() {
+    try {
+        await app.ready();
+        console.log('ROTAS REGISTRADAS');
+        console.log(app.printRoutes());
+
+        await app.listen({ port, host: '0.0.0.0' });
+        console.log(`Rodando em http://localhost:${port}`);
+    } catch (err) {
+        app.log.error(err);
+        process.exit(1);
+    }
+}
+
+start();

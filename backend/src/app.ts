@@ -16,7 +16,6 @@ app.register(fastifyJwt, {
 
 app.decorate('authenticate', authenticate);
 
-// Registro de rotas
 app.register(userRoutes);
 app.register(sessionRoutes);
 app.register(accountRoutes);
