@@ -1,15 +1,11 @@
 import {FastifyReply, FastifyRequest} from "fastify";
 import {pool} from "../../config/db";
+import * as z from "zod";
 
 export async function withdraw (req: FastifyRequest, res: FastifyReply){
-    const { value } = req.body as { value: number };
-    if(!value || value <= 0){
-        return res.status(400).send({
-            status: 400,
-            error: 'Bad request',
-            message: 'O valor da transacao deve ser maior que zero.'
-        })
-    }
+    const valueType = z.object({value: z.number().positive("The value must be higher than zero")})
+    const { value } = valueType.parse(req.body)
+
     const client = await pool.connect();
     try{
         let queryResult = await client.query('SELECT * FROM accounts WHERE user_id = $1', [req.user.sub]);
@@ -59,14 +55,11 @@ export async function withdraw (req: FastifyRequest, res: FastifyReply){
 }
 
 export async function deposit(req: FastifyRequest, res: FastifyReply){
-    const { value, account } = req.body as {value: number, account: string};
-    if(!value || value <= 0){
-        return res.status(400).send({
-            status: 400,
-            error: 'Bad request',
-            message: 'O valor da transacao deve ser maior que zero.'
-        })
-    }
+    const depositSchema = z.object({
+        value: z.number().positive("The value must be higher"),
+        account: z.string().regex(/^\d{6}$/, "Invalid account number")
+    })
+    const { value, account } = depositSchema.parse(req.body);
     const client = await pool.connect();
     try{
         let queryResult = await client.query('SELECT * FROM accounts WHERE account_number = $1', [account]);
@@ -106,19 +99,14 @@ export async function deposit(req: FastifyRequest, res: FastifyReply){
     }
 }
 export async function transfer(req:FastifyRequest, res:FastifyReply) {
-    const userId = req.user.sub
-    const { receiver_account_number, value } = req.body as {
-        receiver_account_number: string,
-        value: number
-    };
+    const transferSchema = z.object({
+        receiver_account_number: z.string().regex(/^\d{6}$/, "Invalid account number"),
+        value: z.number().positive("The value can not be zero"),
+    })
 
-    if(!value || value <= 0){
-        return res.status(400).send({
-            status: 400,
-            error: 'Bad request',
-            message: 'O valor da transacao deve ser maior que zero.'
-        })
-    }
+
+    const { receiver_account_number, value } = transferSchema.parse(req.body);
+    const userId = req.user.sub
     const client = await pool.connect();
 
     try{

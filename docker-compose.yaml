@@ -1,0 +1,16 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: corebank_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bank_admin
+      POSTGRES_PASSWORD: sua_senha_aqui # ⚠️ coloque a sua senha do .env
+      POSTGRES_DB: corebank_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
+volumes:
+  pgdata:
