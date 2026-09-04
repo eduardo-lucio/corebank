@@ -40,7 +40,12 @@ export async function createSession(req: FastifyRequest, res: FastifyReply) {
             statusCode: 201,
             message: 'Login realizado com sucesso',
             token,
-            user: user
+            user: {
+                id: user.id,
+                full_name: user.full_name,
+                email: user.email,
+                role: user.role
+            }
         })
     }catch(err){
         return res.status(500).send({

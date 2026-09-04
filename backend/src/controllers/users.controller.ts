@@ -23,9 +23,9 @@ export async function createUser(req:FastifyRequest, res:FastifyReply) {
 
         await client.query('COMMIT');
         return res.status(201).send({
-            rcreateduser: createdUser.rows[0],
-            rcreatedaccount: createdAccount.rows[0]
-        })
+            user: createdUser.rows[0],
+            account: createdAccount.rows[0]
+        });
     }catch (error: any){
         await client.query('ROLLBACK');
         if(error.code === '23505'){

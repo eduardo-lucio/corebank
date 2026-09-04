@@ -16,8 +16,6 @@ node_modules
 
 # Variaveis de ambiente
 .env
-!.env.example
-.env.*
 
 # Logs
 npm-debug.log*
