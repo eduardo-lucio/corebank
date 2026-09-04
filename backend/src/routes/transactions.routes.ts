@@ -3,6 +3,6 @@ import {deposits, transfers, withdrawals} from '../controllers/transactions.cont
 
 export async function transactionRoutes(app: FastifyInstance) {
     app.post('/transactions/transfers', { onRequest: [app.authenticate] }, transfers);
-    app.post('/transactions/deposits', deposits);
+    app.post('/transactions/deposits', { onRequest: [app.authenticate] }, deposits);
     app.post('/transactions/withdrawals',{ onRequest: [app.authenticate] }, withdrawals);
 }
